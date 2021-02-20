@@ -3,7 +3,7 @@
 .Rapp.history
 
 # Datasets folder 
-/datasets/
+datasets/
 
 # Session Data files
 .RData
