@@ -1,0 +1,1683 @@
+---
+title: "Ontario COVID19"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    theme: paper
+runtime: shiny_prerendered
+---
+<style>
+.navbar {
+  background-color:black;
+  border-color:white;
+}
+
+.navbar-brand {color:white!important;}
+
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a:focus {
+    background-color: #04d9ff;
+    color: white;
+}
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+  color: white;
+  background-color: #04d9ff;
+}
+.navbar-inverse .navbar-toggle:hover,
+.navbar-inverse .navbar-toggle:focus {
+  background-color: #04d9ff;
+}
+.navbar-inverse .navbar-collapse,
+.navbar-inverse .navbar-form {
+  border-color: #04d9ff;
+}
+</style>
+
+```{r setup, include=FALSE}
+library(rsconnect)
+
+#viz libs 
+library(flexdashboard)
+library(plotly)
+library(RColorBrewer)
+
+#data manipulation
+library(lubridate)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(data.table)
+
+#global province wide stats 
+casestatus <- read.csv("./datasets/Status of COVID-19 cases in Ontario.csv", encoding = "UTF-8")
+
+#filter out extraneous data for testing 
+casestatus <- casestatus %>% 
+  dplyr::select(-Confirmed.Negative, -Presumptive.Negative, -Presumptive.Positive) %>% 
+  
+  #formating Date Columns 
+  dplyr::mutate(Reported.Date = as.Date(Reported.Date, format = "%Y-%m-%d"), 
+                
+                # if Total.Cases is.na() == TRUE, replace with 0 
+                # this makes the first two NA values 0 
+                Total.Cases = ifelse(is.na(Total.Cases), 0, Total.Cases)
+                ) %>% 
+  #remove the zero cases 
+  dplyr::filter(Total.Cases != 0)
+```
+
+```{r buttonsAssign}
+##adding a range selector variable to supply list of options for our time series graphs into buttons_time
+buttons_time <- list(
+  list(step = "all"), 
+  
+  list(
+    count = 6,
+    label = "6 mo",
+    step = "month",
+    stepmode = "backward"),
+  
+  list(
+    count = 3, 
+    label = "3 mo", 
+    step = "month", 
+    stepmode = "backward"), 
+  
+  list(
+    count = 2, 
+    label = "2 mo", 
+    step = "month", 
+    stepmode = "backward"), 
+  
+  list(
+    count = 1,
+    label = "1 mo",
+    step = "month",
+    stepmode = "backward"),
+  
+  list(
+    count = 14,
+    label = "2W",
+    step = "day",
+    stepmode = "backward")
+
+)
+```
+
+# Home
+
+## Row {.tabset .tabset-fade}
+
+### <b> Linear Scale </b>
+
+```{r, context="render", echo=FALSE}
+fig <- plot_ly(data = casestatus,
+               x = ~Reported.Date, 
+               y = ~Total.Cases, 
+               type = 'scatter', 
+               mode = 'none', name = 'Total Cases', 
+               fill = 'tozeroy',
+               fillcolor = '#FFC56C') %>% 
+
+  add_trace(y = ~casestatus$Resolved, 
+            name = 'Resolved', 
+            fill = 'tozeroy',
+            fillcolor = '#6EC5E9') %>% 
+
+  add_trace(y = ~Deaths, 
+            name = 'Deaths', 
+            fill = 'tozeroy',
+            fillcolor = '#FF5959') %>% 
+  
+  layout(title = "", 
+        xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = 'Cumulative Case Counts'), 
+         hovermode = "x-unified", 
+         paper_bgcolor = 'transparent')
+
+fig
+```
+
+### <b> Logarithmic Scale </b>
+
+```{r, context="render", echo=FALSE}
+fig %>% layout(title = "",
+               xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+               yaxis = list (title = "Cumulative Case Counts (Log)", type = "log"))
+```
+
+## Row {.tabset .tabset-fade}
+
+### <b> Rolling Averages </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>% 
+  dplyr::select(Reported.Date, Confirmed.Positive) %>% 
+  dplyr::mutate(RM7 = round(zoo::rollmean(casestatus$Confirmed.Positive, k = 7, fill = NA), 0), 
+                RM15 = round(zoo::rollmean(casestatus$Confirmed.Positive, k = 15, fill = NA), 0),
+                RM29 = round(zoo::rollmean(casestatus$Confirmed.Positive, k = 29, fill = NA),0)) %>% 
+
+plot_ly(x = ~Reported.Date, 
+        y = ~RM7, 
+        name = "7 Day Trend",
+        type = 'scatter', 
+        mode = 'lines', 
+        fill = 'tozeroy', 
+        fillcolor = 'rgba(255, 89, 89, 0.7)',
+        opacity = 0.25, 
+        line = list(width = 0.1, color = 'rgba(255, 89, 89, 0.7)')) %>% 
+  
+  add_trace(y = ~RM15, 
+            fillcolor = 'rgba(255, 197, 108, 0.7)',
+            opacity = 0.25, 
+            name = "15 Day Trend",
+            line = list(color = 'rgba(255, 197, 108, 0.7)')) %>% 
+  
+  add_trace(y = ~RM29,
+            fillcolor = 'rgba(110, 197, 233, 0.7)',
+            opacity = 0.25,
+            name = "29 Day Trend",
+            line = list(color = 'rgba(110, 197, 233, 0.7)')) %>% 
+
+  layout(title = "",
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "New Cases"), 
+         hovermode = "x-unified", 
+         paper_bgcolor='transparent', 
+         legend=list(title=list(text='<b> Rolling Averages </b>'))) 
+```
+
+### <b> New Cases (n) </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>%
+  dplyr::select(Reported.Date, Total.Cases, Resolved, Deaths) %>% 
+  
+  # if we detect early NA values, set them to 0 
+  dplyr::mutate(Resolved = ifelse(is.na(Resolved), 0, Resolved),
+                Deaths = ifelse(is.na(Deaths), 0, Deaths)) %>% 
+  dplyr::mutate(
+    # Compute the Absolute Change per Total Cases/Resolved/Deaths  
+    TotalCases_Change = Total.Cases - lag(Total.Cases, 1, default = 0),
+    Resolved_Change = Resolved - lag(Resolved,1, default = 0.0),
+    Deaths_Change = Deaths - lag(Deaths,1, default = 0.0)) %>% 
+
+
+plot_ly(x = ~Reported.Date, y = ~TotalCases_Change, type = 'bar', 
+               name = 'Cases', 
+               marker = list(color = '#FFC56C')) %>% 
+  
+  add_trace(y = ~Resolved_Change, 
+                         name = 'Resolved',
+                         marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~Deaths_Change, 
+                         name = 'Deaths', 
+                         marker = list(color = '#FF5959')) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = 'Absolute Change'), 
+         barmode = 'stack',
+         hovermode = "x-unified",
+         paper_bgcolor='transparent', 
+         legend=list(title=list(text='<b> New Cases </b>'))) 
+
+```
+
+### <b> New Cases (%) </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>%
+  dplyr::select(Reported.Date, Total.Cases, Resolved, Deaths) %>% 
+   # if we detect early NA values, set them to 0 
+  dplyr::mutate(Resolved = ifelse(is.na(Resolved), 0, Resolved),
+                Deaths = ifelse(is.na(Deaths), 0, Deaths), 
+                
+    # Compute the Absolute Change per Total Cases/Resolved/Deaths  
+    TotalCases_Change = Total.Cases - lag(Total.Cases, 1, default = 0),
+    Resolved_Change = Resolved - lag(Resolved,1, default = 0.0),
+    Deaths_Change = Deaths - lag(Deaths,1, default = 0.0),
+
+    # computing the Relative Change 
+    TotalCases_ChangePct = round(TotalCases_Change/Total.Cases*100 ,1), 
+    Resolved_ChangePct = round(Resolved_Change/Resolved*100 ,1),
+    Deaths_ChangePct = round(Deaths_Change/Deaths*100 ,1), 
+    
+    # Relative change computations produce NaN values
+    # replace with 0.00 values 
+    TotalCases_ChangePct = ifelse(is.na(TotalCases_ChangePct), 0.00, TotalCases_ChangePct), 
+    Resolved_ChangePct = ifelse(is.na(Resolved_ChangePct), 0.00, Resolved_ChangePct), 
+    Deaths_ChangePct = ifelse(is.na(Deaths_ChangePct), 0.00, Deaths_ChangePct)) %>% 
+  
+plot_ly(x = ~Reported.Date, y = ~TotalCases_ChangePct, 
+        type = 'bar', 
+        name = 'Cases', 
+        marker = list(color = '#FFC56C')) %>% 
+  
+  add_trace(y = ~Resolved_ChangePct, 
+            name = 'Resolved', 
+            marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~Deaths_ChangePct, 
+            name = 'Deaths', 
+            marker = list(color = '#FF5959')) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = 'Relative Change (%)'), 
+         barmode = 'stack', 
+         hovermode = "x-unified", 
+         paper_bgcolor = 'transparent', 
+         legend=list(title=list(text='<b> Cases </b>'))) 
+```
+
+### <b> Cases per Capita </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>% 
+  dplyr::select(Reported.Date, Total.Cases, Resolved, Deaths) %>% 
+  # if we detect early NA values, set them to 0 
+  dplyr::mutate(Resolved = ifelse(is.na(Resolved), 0, Resolved),
+                Deaths = ifelse(is.na(Deaths), 0, Deaths),
+                
+                # Computing per Capita statistics per 1M 
+                TotalCasesPerCapita = round((Total.Cases / 14750000)*1000000, 0), 
+                ResolvedPerCapita = round((Resolved / 14750000)*1000000, 0), 
+                DeathsPerCapita = round((Deaths / 14750000)*1000000, 0)) %>% 
+
+plot_ly(x = ~Reported.Date, y = ~TotalCasesPerCapita, 
+        type = 'bar', 
+        name = 'Cases', 
+        marker = list(color = '#FFC56C')) %>% 
+  
+  add_trace(y = ~ResolvedPerCapita, 
+            name = 'Resolved', 
+            marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~DeathsPerCapita, 
+            name = 'Deaths',
+            marker = list(color = '#FF5959')) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = 'Cases per Capita (1M)'), 
+         barmode = 'stack', 
+         hovermode = "x-unified", 
+         paper_bgcolor = 'transparent', 
+         legend=list(title=list(text='<b> Per Capita Rates </b>'))) 
+```
+
+# Testing
+
+## Row {.tabset .tabset-fade}
+
+### <b> Positives </b>
+
+```{r, context="render", echo=FALSE}
+plot_ly(data = casestatus,
+        x = ~Reported.Date, 
+        y = ~Confirmed.Positive, 
+        type = 'scatter', mode = 'lines', name = 'Confirmed Positive',
+        fill = 'tozeroy',
+        fillcolor = '#2858a6',
+        line = list(width = 0.5),
+        text = ~paste(Reported.Date, "<br>", 
+                      format(Confirmed.Positive, big.mark = ",")
+                      , 'Tested Positive', sep = " "), 
+        hoverinfo = 'text') %>% 
+  
+  layout(title = "",
+         yaxis = list(title = ''),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         hovermode = "x-unified", 
+         paper_bgcolor='transparent') 
+```
+
+### <b> Testing Outcomes </b>
+
+```{r, context="render", echo=FALSE}
+plot_ly(casestatus, 
+        x = ~Reported.Date, 
+        y = ~Confirmed.Positive, 
+        type = 'bar', name = 'Positives', 
+        marker = list(color = 'FF5959')) %>% 
+  
+  add_trace(y = ~Total.tests.completed.in.the.last.day, 
+            name = 'Total Tests', 
+            marker = list(color = '6EC5E9')) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = ''), barmode = 'stack', 
+         hovermode = "x-unified", 
+         paper_bgcolor='transparent') 
+```
+
+### <b> Positivity Rate </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>%   
+  dplyr::select(Reported.Date, Confirmed.Positive, Total.tests.completed.in.the.last.day) %>% 
+  # Filter out NA Rows for Total Tests 
+  dplyr::filter(!is.na(Total.tests.completed.in.the.last.day)) %>% 
+  # Compute Test Positivity Rate 
+  dplyr::mutate(Positive_pct = round((Confirmed.Positive/Total.tests.completed.in.the.last.day)*100,1)) %>%
+  dplyr::mutate(Negative_pct = round(100-Positive_pct,1)) %>% 
+  data.frame() %>% 
+  
+  plot_ly(x = ~Reported.Date, 
+          y = ~Positive_pct, 
+          type = 'bar', name = 'Positive', 
+          
+          marker = list(color = '#F8F8F8', line = list(width = 0.5,
+                                                       color = 'black')), 
+          text = ~paste(format(Reported.Date, "%A, %B %d, %Y"), "<br>",
+                        'Positivity Rate: ', Positive_pct, '%', sep = ""), 
+          hoverinfo = 'text',
+          
+          #filters for values larger than 0 in Y column 
+          transforms = list(list(type = 'filter',
+                                 target = 'y', 
+                                 operation = '>', 
+                                 value = 0.0))) %>% 
+  
+  add_trace(name = "Negative", 
+            x = ~Reported.Date,
+            y = ~Negative_pct, 
+            marker = list(color = '#808080'), 
+            text = ~paste(format(Reported.Date, "%A, %B %d, %Y"), "<br>",
+                          'Negativity Rate: ', Positive_pct, '%', sep = ""), 
+            hoverinfo = 'text') %>% 
+  
+  layout(title = "",
+         yaxis = list(title = 'Frequency (%)',
+                      dtick = 25, 
+                      tick0 = 0, 
+                      tickmode = "linear"),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'), 
+         legend=list(title=list(text='<b> Test Outcome: </b>')))
+```
+
+### <b> Tests per Capita </b>
+
+```{r, context="render", echo=FALSE}
+casestatus %>%   
+  dplyr::select(Reported.Date, Confirmed.Positive, Total.tests.completed.in.the.last.day) %>% 
+  dplyr::filter(!is.na(Total.tests.completed.in.the.last.day)) %>% 
+  dplyr::mutate(TestPositiveRate = round((Confirmed.Positive/Total.tests.completed.in.the.last.day)*100,1), 
+                # calcualting the tests per capita 
+                TestsPerCapitaM = round((Total.tests.completed.in.the.last.day/14750000)*1000000,0)) %>% 
+  
+             
+plot_ly(x = ~Reported.Date, 
+        y = ~TestsPerCapitaM,
+        type = 'bar', 
+        name = 'Tests per Capita', 
+        marker = list(color = '#FFD300'),
+        text = ~paste(format(Reported.Date, "%A, %B %d, %Y"), "<br>",
+                      format(TestsPerCapitaM, big.mark = ","), " Tests per Capita (1M)", sep = ""), 
+        hoverinfo = "text")%>% 
+  
+  layout(title = "",
+         yaxis = list(title = 'Tests'),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         hovermode = "x-unified", 
+         hoverlabel=list(bgcolor="black"),
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'))
+```
+
+# Vaccinations
+
+## Row {.tabset .tabset-fade}
+
+### <b> Total Vaccinations </b>
+
+```{r, context="render", echo=FALSE}
+Vaccine_data <- read.csv("./datasets/COVID-19 Vaccine Data.csv") %>% 
+  dplyr::mutate(report_date = as.Date(report_date, format = "%Y-%m-%d"), 
+                total_doses_in_fully_vaccinated_individuals = as.numeric(gsub(",", "", total_doses_in_fully_vaccinated_individuals)),
+                total_individuals_fully_vaccinated = as.numeric(gsub(",", "", total_individuals_fully_vaccinated))) 
+
+
+Vaccine_data %>% 
+  dplyr::select(report_date, total_individuals_fully_vaccinated) %>% 
+
+  plot_ly(x = ~report_date, 
+          y = ~total_individuals_fully_vaccinated, 
+          type = 'scatter',
+          mode = "lines", 
+          line = list(color = "#405DE6", width = 4), 
+          text = ~paste(format(report_date, "%A, %B %d, %Y"), "<br>",
+                        format(total_individuals_fully_vaccinated, big.mark = ","), " total individuals fully vaccinated", sep = ""), 
+          hoverinfo = "text") %>% 
+  
+  layout(title = "",
+         yaxis = list(title = 'Vaccinations Completed'),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         hovermode = "x-unified", 
+         hoverlabel=list(bgcolor="#405DE6"),
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'))
+```
+
+### <b> Daily Vaccinations </b>
+
+```{r, context="render", echo=FALSE}
+Vaccine_data %>% 
+  dplyr::select(report_date, total_individuals_fully_vaccinated) %>% 
+  # NA values before this date, we filter out 
+  dplyr::filter(report_date >= "2021-01-06") %>% 
+  dplyr::mutate(daily_vaccinations = total_individuals_fully_vaccinated - lag(total_individuals_fully_vaccinated, 1, default = 0)) %>% 
+  
+  
+  plot_ly(x = ~report_date, 
+          y = ~daily_vaccinations, 
+          type = 'bar',
+          marker = list(color = "#FF00BF"), 
+          text = ~paste(format(report_date, "%A, %B %d, %Y"), "<br>",
+                        "New Vaccinations: ", format(daily_vaccinations, big.mark = ","),sep = ""), 
+          hoverinfo = "text") %>% 
+  
+  layout(title = "",
+         yaxis = list(title = 'New Vaccinations'),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         hovermode = "x-unified", 
+         hoverlabel=list(bgcolor="#FF00BF"),
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'))
+```
+
+### <b> Population Vaccinated </b>
+
+```{r, context="render", echo=FALSE}
+Vaccine_data <- Vaccine_data %>% 
+  dplyr::mutate(report_date = as.Date(report_date, format = "%m/%d/%Y"),
+                Pct = round(total_individuals_fully_vaccinated/14.57e6*100, 2))
+
+Vaccine_data %>% 
+  
+  plot_ly(x = ~report_date, 
+          y = ~Pct, 
+          type = 'scatter',
+          mode = "lines+markers", 
+          line = list(color = "#6d2aff", width = 4), 
+          marker = list(color = "#9b6dff", size = 8), 
+          text = ~paste(format(report_date, "%A, %B %d, %Y"), "<br>",
+                        format(Pct, big.mark = ","), " % Vaccinated", sep = ""), 
+          hoverinfo = "text") %>% 
+  
+  layout(title = "",
+         yaxis = list(title = 'Vaccinations (% of Ontario Population)'),
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         hovermode = "x-unified", 
+         hoverlabel=list(bgcolor="#6d2aff"),
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'))
+```
+
+# Hospitalizations
+
+## Row {.tabset .tabset-fade}
+
+### <b> Hospitalizations </b>
+
+```{r, context="render", echo=FALSE}
+plot_ly(casestatus, x = ~Reported.Date, y = ~Number.of.patients.hospitalized.with.COVID.19, 
+        type = 'scatter', 
+        mode = 'lines',
+        name = 'Total Hospitalized', 
+        #marker = list(color = '#2C82C9', size = 3), 
+        line = list(color = '#6EC5E9', width = 2), 
+        text = ~paste(Reported.Date, "<br>",
+                      format(Number.of.patients.hospitalized.with.COVID.19, big.mark = ","), " Total Hospitalized", sep = ""), 
+        hoverinfo = "text") %>%
+  
+  add_trace(y = ~Number.of.patients.in.ICU.with.COVID.19, 
+            name = 'ICU', 
+            #marker = list(color = '#FCB941', size = 3),
+            line = list(color = '#FFD300', width = 2), 
+            text = ~paste(Reported.Date, "<br>",
+                          Number.of.patients.in.ICU.with.COVID.19, " ICU Patients", sep = ""), 
+            hoverinfo = "text") %>% 
+  
+  add_trace(y = ~Number.of.patients.in.ICU.on.a.ventilator.with.COVID.19, 
+            name = 'Ventilator', 
+            #marker = list(color = '#FC6042', size = 3),
+            line = list(color = '#FF1C51', width = 2), 
+            text = ~paste(Reported.Date, "<br>",
+                          Number.of.patients.in.ICU.on.a.ventilator.with.COVID.19, " Vent. Patients", sep = ""), 
+            hoverinfo = "text") %>% 
+  
+  layout(title = "",
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)), 
+         yaxis = list(title = 'Patients (n)'), 
+         hovermode = "x-unified", 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor  = "black",
+         paper_bgcolor='black', 
+         font = list(color = '#C0C0C0'), 
+         legend=list(title=list(text='<b> Patient Status </b>'))) 
+```
+
+# Case Acquisition
+
+## Row {.tabset .tabset-fade}
+
+```{r, context="render", echo=FALSE}
+ConfirmedPositives <- data.table::fread("./datasets/Confirmed positive cases of COVID-19 in Ontario.csv", encoding = "UTF-8", data.table = F)
+ConfirmedPositives$Case_Reported_Date <- as.Date(ConfirmedPositives$Case_Reported_Date, format = "%Y-%m-%d")
+```
+
+### <b> Breakdown </b>
+
+```{r, context="render", echo=FALSE}
+ConfirmedPositives %>% 
+  dplyr::mutate(Case_AcquisitionInfo = case_when(
+    .$Case_AcquisitionInfo == "OB" ~ "Outbreak Related", 
+    .$Case_AcquisitionInfo == "CC" ~ "Close Contact",
+    .$Case_AcquisitionInfo == "TRAVEL" ~ "Travel",
+    .$Case_AcquisitionInfo == "NO KNOWN EPI LINK" ~ "Unknown",
+    .$Case_AcquisitionInfo == "MISSING INFORMATION" ~ "Unknown",
+    .$Case_AcquisitionInfo == "UNSPECIFIED EPI LINK" ~ "Unknown")) %>% 
+  dplyr::group_by(Case_AcquisitionInfo) %>% 
+  dplyr::summarise(n = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(Case_AcquisitionInfo = trimws(Case_AcquisitionInfo)) %>% 
+  data.frame() %>% 
+
+plot_ly(labels = ~Case_AcquisitionInfo, values = ~n, type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste(Case_AcquisitionInfo, "<br>", 
+                      format(n, nsmall = 0, big.mark = ","), 
+                      'Cases', sep = " "),
+        marker = list(colors = c("#E01E5A", "#F4B400", "#25D366", "#C0C0C0"),
+                      line = list(color = '#FFFFFF', width = 1)),
+        #The 'pull' attribute can also be used to create space between the sectors
+        showlegend = FALSE) %>% 
+  
+  layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+### <b> Acquisitions Over Time </b>
+
+```{r, context="render", echo=FALSE}
+ConfirmedPositives %>% 
+  
+  dplyr::select(Accurate_Episode_Date, Case_AcquisitionInfo) %>% 
+  
+    dplyr::mutate(Case_AcquisitionInfo = case_when(
+      .$Case_AcquisitionInfo == "OB" ~ "Outbreak Related", 
+      .$Case_AcquisitionInfo == "CC" ~ "Close Contact",
+      .$Case_AcquisitionInfo == "TRAVEL" ~ "Travel",
+      .$Case_AcquisitionInfo == "NO KNOWN EPI LINK" ~ "Unknown",
+      .$Case_AcquisitionInfo == "MISSING INFORMATION" ~ "Unknown",
+      .$Case_AcquisitionInfo == "UNSPECIFIED EPI LINK" ~ "Unknown")) %>%
+  
+    dplyr::group_by(Accurate_Episode_Date, Case_AcquisitionInfo) %>% 
+  
+    dplyr::summarise(count = n(), .groups = 'keep') %>%
+    dplyr::ungroup() %>% 
+    tidyr::spread(Case_AcquisitionInfo, count, fill = 0) %>% 
+    as.data.frame() %>% 
+  
+    plot_ly(x = ~Accurate_Episode_Date, 
+            y = ~`Close Contact`, type = 'bar', 
+            name = 'Close Contact', 
+            marker = list(color = '#E01E5A')) %>% 
+    
+    add_trace(y = ~`Outbreak Related`, name = 'Outbreak Related', marker = list(color = '#F4B400')) %>% 
+    
+    add_trace(y = ~Travel, name = 'Travel', marker = list(color ='#25D366'))%>% 
+    
+    add_trace(y = ~Unknown, 
+              name = "Unknown", marker = list(color = "#DCDCDC")) %>% 
+    
+    layout(title = "", 
+           xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+           yaxis = list(title = 'Frequency (n)'), 
+           hovermode = "x-unified",
+           barmode = 'stack',
+           legend=list(title=list(text='<b> Case Acquisition Type: </b>'))) 
+```
+
+### <b> Cumulative Acquisitions </b>
+
+```{r, context="render", echo=FALSE}
+acq_daily <- ConfirmedPositives %>% 
+  dplyr::select(Row_ID,Case_Reported_Date, Case_AcquisitionInfo) %>% 
+  
+    dplyr::mutate(Case_AcquisitionInfo = case_when(
+      .$Case_AcquisitionInfo == "OB" ~ "Outbreak Related", 
+      .$Case_AcquisitionInfo == "CC" ~ "Close Contact",
+      .$Case_AcquisitionInfo == "TRAVEL" ~ "Travel",
+      .$Case_AcquisitionInfo == "NO KNOWN EPI LINK" ~ "Unknown",
+      .$Case_AcquisitionInfo == "MISSING INFORMATION" ~ "Unknown",
+      .$Case_AcquisitionInfo == "UNSPECIFIED EPI LINK" ~ "Unknown")) %>%
+  
+  dplyr::group_by(Case_Reported_Date, Case_AcquisitionInfo) %>% 
+  dplyr::summarise(count = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  tidyr::spread(Case_AcquisitionInfo, count, fill = 0) %>% 
+  as.data.frame() %>% 
+  
+  #adding cumulative counts 
+  dplyr::mutate(CC_csum = cumsum(`Close Contact`), 
+                OB_csum = cumsum(`Outbreak Related`), 
+                Travel_csum = cumsum(Travel),
+                Unknown_csum = cumsum(`Unknown`)) 
+
+acq_daily <- na.omit(acq_daily, cols = "Case_Reported_Date")
+
+plot_ly(acq_daily, x = ~Case_Reported_Date, y = ~OB_csum, 
+        type = 'scatter', mode = 'none', fill = 'tozeroy', 
+        name = 'Outbreak', 
+        fillcolor = 'rgba(244, 180, 0, 0.7)',
+        opacity = 0.8) %>% 
+  
+  add_trace(x = ~Case_Reported_Date,y = ~CC_csum, name = "Close Contact", 
+            fill = 'tozeroy',
+            fillcolor = 'rgba(224, 30, 90, 0.7)',
+            opacity = 0.8) %>% 
+  
+  add_trace(x = ~Case_Reported_Date,y = ~Travel_csum, name = "Travel", 
+            fill = 'tozeroy',
+            fillcolor = 'rgba(37, 211, 102, 0.7)',
+            opacity = 0.8) %>% 
+  
+  add_trace(x = ~Case_Reported_Date,y = ~Unknown_csum, name = "Uknown", 
+            fill = 'tozeroy',
+            fillcolor = 'rgba(220, 220, 220, 0.7)',
+            opacity = 0.8) %>% 
+  
+  layout(hovermode = 'x-unified', 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "Cumulative Totals"), 
+         legend=list(title=list(text='<b> Acquisition Type </b>')))
+```
+
+### <b> Close Contact Cases by PHU </b>
+
+```{r, context="render", echo=FALSE}
+#CC by region 
+cc_R <- ConfirmedPositives %>% 
+  dplyr::select(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::filter(Case_AcquisitionInfo == "CC") %>% 
+  dplyr::group_by(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::count(name = "CC_Cases") %>% 
+  dplyr::ungroup() 
+
+plot_ly(data = cc_R, 
+        x = ~Case_Reported_Date, 
+        y = ~Reporting_PHU, 
+        z = ~CC_Cases, 
+        type = "heatmap", 
+        #colors = colorRamp(c("Black","Blue", "Red", "Yellow")),
+        text = ~paste(cc_R$Reporting_PHU, "<br>", 
+                      cc_R$Case_Reported_Date,
+                      "<br>", cc_R$CC_Cases, " Close Contact Cases",
+                      sep = ""), 
+        hoverinfo = "text", 
+        
+        showlegend = F, 
+        showscale = T, 
+        colorbar = list(title = "Close Contact Cases")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "", 
+                      categoryorder = "array", 
+                      autorange='reversed'),
+         barmode = 'stack', 
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor='Black',
+         paper_bgcolor='Black', 
+         font = list(color = 'Grey')) 
+```
+
+### <b> Unknown Cases by PHU </b>
+
+```{r, context="render", echo=FALSE}
+ConfirmedPositives %>% 
+  dplyr::select(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  
+  dplyr::mutate(Case_AcquisitionInfo = case_when(
+      .$Case_AcquisitionInfo == "NO KNOWN EPI LINK" ~ "Unknown",
+      .$Case_AcquisitionInfo == "MISSING INFORMATION" ~ "Unknown",
+      .$Case_AcquisitionInfo == "UNSPECIFIED EPI LINK" ~ "Unknown")) %>%
+  
+  dplyr::filter(Case_AcquisitionInfo == "Unknown") %>% 
+  dplyr::group_by(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::count(name = "U_Cases") %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+
+plot_ly(x = ~Case_Reported_Date, 
+        y = ~Reporting_PHU, 
+        z = ~U_Cases, 
+        type = "heatmap", 
+        #colors = colorRamp(c("Black","Blue", "Red", "Yellow")),
+        text = ~paste(Reporting_PHU, "<br>", 
+                      Case_Reported_Date,
+                      "<br>", U_Cases, " Unknown Cases",
+                      sep = ""), 
+        hoverinfo = "text", 
+        
+        showlegend = F, 
+        showscale = T, 
+        colorbar = list(title = "Unknown Cases")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "", 
+                      categoryorder = "array", 
+                      autorange='reversed'),
+         barmode = 'stack', 
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor='Black',
+         paper_bgcolor='Black', 
+         font = list(color = 'Grey')) 
+```
+
+### <b> Outbreaks Cases by PHU </b>
+
+```{r, context="render", echo=FALSE}
+#outbreaks by region 
+ConfirmedPositives %>% 
+  dplyr::select(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::filter(Case_AcquisitionInfo == "OB") %>% 
+  dplyr::group_by(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::count(name = "Outbreak_Cases") %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+
+plot_ly(x = ~Case_Reported_Date, 
+        y = ~Reporting_PHU, 
+        z = ~Outbreak_Cases, 
+        type = "heatmap", 
+      
+        #colors = colorRamp(c("Black","Blue", "Red", "Yellow")),
+        text = ~paste(Reporting_PHU, "<br>", 
+                      Case_Reported_Date,
+                      "<br>", Outbreak_Cases, " Outbreak Cases",
+                      sep = ""), 
+        hoverinfo = "text", 
+        
+        showlegend = F, 
+        showscale = T, 
+        colorbar = list(title = "Outbreak Cases")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "", 
+                      categoryorder = "array", 
+                      autorange='reversed'),
+         barmode = 'stack', 
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor='Black',
+         paper_bgcolor='Black', 
+         font = list(color = 'Grey')) 
+```
+
+### <b> Travel cases by PHU </b>
+
+```{r, context="render", echo=FALSE}
+ConfirmedPositives %>% 
+  dplyr::select(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::filter(Case_AcquisitionInfo == "TRAVEL") %>% 
+  dplyr::group_by(Case_Reported_Date, Case_AcquisitionInfo, Reporting_PHU) %>% 
+  dplyr::count(name = "T_Cases") %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+  dplyr::arrange(Reporting_PHU) %>% 
+
+plot_ly(x = ~Case_Reported_Date, 
+        y = ~Reporting_PHU, 
+        z = ~T_Cases, 
+        type = "heatmap", 
+        #colors = colorRamp(c("Black","Blue", "Red", "Yellow")),
+        text = ~paste(Reporting_PHU, "<br>", 
+                      Case_Reported_Date,
+                      "<br>", T_Cases, " Travel Cases",
+                      sep = ""), 
+        hoverinfo = "text", 
+        showlegend = F,
+        showscale = T, 
+        colorbar = list(title = "Travel Cases")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "", 
+                      categoryorder = "array", 
+                      autorange='reversed'),
+         barmode = 'stack', 
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor='Black',
+         paper_bgcolor='Black', 
+         font = list(color = 'Grey')) 
+```
+
+# Workplaces
+
+## Row {.tabset .tabset-fade}
+
+### <b> Workplace Groups </b>
+
+```{r, context="render", echo=FALSE}
+ongoingOutbreaks <- read.csv(file = "./datasets/Ongoing outbreaks.csv")
+# format dates 
+ongoingOutbreaks$date <- as.Date(ongoingOutbreaks$date)
+
+plot_ly(data = ongoingOutbreaks, 
+        x = ~date, 
+        y = ~number_ongoing_outbreaks,
+        type = 'bar', 
+        name = ~outbreak_group, 
+        color = ~outbreak_group, 
+        colors = "Spectral",
+        text = ~paste(outbreak_group, "<br>",number_ongoing_outbreaks, " Ongoing Outbreaks", sep = ""), 
+        hoverinfo = "text") %>% 
+  
+  layout(barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)), 
+         yaxis = list(title = "Total Ongoing Outbreaks (n)"), 
+         legend=list(title=list(text='<b> Workplace Groups: </b>'))
+  )
+```
+
+### <b> Workplace Group Proportions </b>
+
+```{r, context="render", echo=FALSE}
+ongoingOutbreaks %>% 
+  dplyr::group_by(date, outbreak_group) %>% 
+  summarise(number_ongoing_outbreaks = sum(number_ongoing_outbreaks), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  dplyr::group_by(date) %>% 
+  dplyr::mutate(Total_Outbreaks = sum(number_ongoing_outbreaks), 
+                Group_Pct = round((number_ongoing_outbreaks/Total_Outbreaks)*100,1)) %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+  
+  plot_ly(x = ~date, 
+          y = ~Group_Pct,
+          type = 'bar', 
+          name = ~outbreak_group, 
+          color = ~outbreak_group, 
+          colors = "Spectral", 
+          text = ~paste(outbreak_group, "<br>",Group_Pct, " % (n = ",number_ongoing_outbreaks, ")",  sep = ""), 
+          hoverinfo = "text"
+  ) %>% 
+  
+  layout(barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+                      dtick = 25, 
+                      tick0 = 0, 
+                      tickmode = "linear"), 
+         legend=list(title=list(text='<b> Workplace Groups: </b>'))
+  )
+```
+
+### <b> Heatmap of Subgroups </b>
+
+```{r, context="render", echo=FALSE}
+plot_ly(data = ongoingOutbreaks,
+        x = ~date, 
+        y = ~outbreak_subgroup, 
+        z = ~number_ongoing_outbreaks, 
+        type = "heatmap", 
+        #colors = colorRamp(c("Black","Blue", "Red", "Yellow")),
+        text = ~paste(outbreak_subgroup, "<br>", 
+                      date,
+                      "<br>", number_ongoing_outbreaks, " Ongoing Outbreaks",
+                      sep = ""), 
+        hoverinfo = "text", 
+        showlegend = F,
+        colorscale = "Viridis", 
+        colorbar = list(title = "Number of Ongoing Outbreaks")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "", 
+                      categoryorder = "array", 
+                      autorange='reversed'),
+         barmode = 'stack', 
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         plot_bgcolor='Black',
+         paper_bgcolor='Black',
+         font = list(color = 'Grey')) 
+
+```
+
+### <b> Workplace Subgroup Composition </b>
+
+```{r, context="render", echo=FALSE}
+ongoingOutbreaks %>% 
+  dplyr::filter(outbreak_group == "Workplace") %>%
+  dplyr::group_by(date) %>% 
+  dplyr::mutate(Total_Outbreaks = sum(number_ongoing_outbreaks), 
+                sub_GroupPct = round((number_ongoing_outbreaks/Total_Outbreaks)*100,1)) %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+  plot_ly(x = ~date, 
+          y = ~sub_GroupPct,
+          type = 'bar', 
+          name = ~outbreak_subgroup, 
+          color = ~outbreak_subgroup, 
+          colors = "Blues", 
+          text = ~paste(outbreak_subgroup,": ", sub_GroupPct, "%", " (n = ",number_ongoing_outbreaks, ")", sep = ""),
+          hoverinfo = "text"
+  ) %>% 
+  
+  layout(barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+                      dtick = 25, 
+                      tick0 = 0, 
+                      tickmode = "linear"), 
+         legend=list(title=list(text='<b> Subgroup: Workplace  </b>')) 
+  )
+```
+
+### <b> Education Setting Composition </b>
+
+```{r, context="render", echo=FALSE}
+ongoingOutbreaks %>% 
+  dplyr::filter(outbreak_group == "Education") %>%
+  dplyr::group_by(date) %>% 
+  dplyr::mutate(Total_Outbreaks = sum(number_ongoing_outbreaks), 
+                sub_GroupPct = round((number_ongoing_outbreaks/Total_Outbreaks)*100,1)) %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+  
+  plot_ly(x = ~date, 
+          y = ~sub_GroupPct,
+          type = 'bar', 
+          name = ~outbreak_subgroup, 
+          color = ~outbreak_subgroup, 
+          colors = "Paired",
+          text = ~paste(outbreak_subgroup,": ", sub_GroupPct, "%", " (n = ",number_ongoing_outbreaks, ")", sep = ""),
+          hoverinfo = "text") %>% 
+  
+  layout(barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)),
+         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+                      dtick = 25, 
+                      tick0 = 0, 
+                      tickmode = "linear"), 
+                  legend=list(title=list(text='<b> Subgroup: Education </b>')))
+```
+
+### <b> Recreational Setting Composition </b>
+
+```{r, context="render", echo=FALSE}
+ongoingOutbreaks %>% 
+  dplyr::filter(outbreak_group == "Recreational") %>%
+  dplyr::group_by(date) %>% 
+  dplyr::mutate(Total_Outbreaks = sum(number_ongoing_outbreaks), 
+                sub_GroupPct = round((number_ongoing_outbreaks/Total_Outbreaks)*100,1)) %>% 
+  dplyr::ungroup() %>% 
+  data.frame() %>% 
+  plot_ly(x = ~date, 
+          y = ~sub_GroupPct,
+          type = 'bar', 
+          name = ~outbreak_subgroup, 
+          color = ~outbreak_subgroup, 
+          colors = "Paired", 
+        
+          text = ~paste(outbreak_subgroup,": ", sub_GroupPct, "%", " (n = ",number_ongoing_outbreaks, ")", sep = ""),
+          hoverinfo = "text") %>% 
+  
+  layout(barmode = 'stack',
+         hovermode = 'x-unified', 
+         hoverlabel=list(bgcolor="black"), 
+         xaxis = list(type = 'date', 
+                      tickformat = "%B <br> %Y",
+                      title = '', 
+                      rangeselector = list(buttons = buttons_time)), 
+         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+                      dtick = 25, 
+                      tick0 = 0, 
+                      tickmode = "linear"), 
+                  legend=list(title=list(text='<b> Subgroup: Recreational </b>')) 
+  )
+```
+
+# Public Health Units
+
+## Row {.tabset .tabset-fade}
+
+```{r PHUDataCleaning}
+TotalCasesbyRegion <- ConfirmedPositives %>% 
+  dplyr::group_by(Reporting_PHU, .drop = FALSE) %>% 
+  dplyr::summarise(Total_Cases = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  dplyr::arrange(Reporting_PHU) %>%
+  data.frame()
+
+reg_Breakdown <- ConfirmedPositives %>% 
+  dplyr::select(Reporting_PHU, Outcome1) %>% 
+  dplyr::group_by(Reporting_PHU,Outcome1) %>% 
+  dplyr::summarise(count = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  tidyr::spread(Outcome1, count, fill = 0) %>% 
+  data.frame() %>% 
+  dplyr::left_join(TotalCasesbyRegion, by = "Reporting_PHU") %>% 
+  dplyr::rename(Total_Deaths = Fatal, 
+                Total_Recovered = Resolved, 
+                Total_Actives = Not.Resolved)
+
+PublicHealthUnits <- unique(reg_Breakdown$Reporting_PHU)
+
+Population <- c(113084,134943,102042,645862,202762,
+                161977,109652,179083,548430,536917,
+                161180,136093,193363,126638,169244,
+                455526,447888,123820,76455,934243,
+                1381744,138236,84201,535154,103593,
+                540249,953261,196448,151884,33049,
+                2731571,284461,398953,1109909)
+
+LandSizeSqKM <- c(41266.67, 1128.88,2470.52,2523.80,5314.34,
+                  8603.70,2859.09,9065.60,964.04,1117.29,
+                  7154.41,5617.79,6627.44,3002.25,6418.52,
+                  3317.27,1854.23,16937.78,173828.16,2790.30,
+                  1246.96,3848.20,271922.40,1368.92,15032.23,
+                  8800.12,20917.77,46551.02,230610.23,14146.28,
+                  630.20,4147.01,1850.90,1762.13)
+
+PHU_summary_table <- data.frame(PublicHealthUnits, Population, LandSizeSqKM)
+
+reg_Breakdown <- merge(reg_Breakdown, PHU_summary_table, by.x = "Reporting_PHU", by.y = "PublicHealthUnits")
+
+reg_Breakdown$CasesPerCapita <- round((reg_Breakdown$Total_Cases / reg_Breakdown$Population) * 100000, 0)
+reg_Breakdown$RecoveriesPerCapita <- round((reg_Breakdown$Total_Recovered / reg_Breakdown$Population) * 100000, 0)
+reg_Breakdown$DeathsPerCapita <- round((reg_Breakdown$Total_Deaths / reg_Breakdown$Population) * 100000, 0)
+reg_Breakdown$ActiveRate <- round(reg_Breakdown$Total_Actives/reg_Breakdown$Total_Cases*100,1)
+reg_Breakdown$RecoveryRate <- round(reg_Breakdown$Total_Recovered/reg_Breakdown$Total_Cases*100,1)
+reg_Breakdown$DeathRate <- round(reg_Breakdown$Total_Deaths/reg_Breakdown$Total_Cases*100,1)
+```
+
+### <b> Total Cases by Region </b>
+
+```{r PHUBreakdown}
+plot_ly(reg_Breakdown, labels = ~Reporting_PHU, 
+        values = ~Total_Cases, 
+        type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste(Reporting_PHU, "<br>", 
+                      format(Total_Cases, nsmall = 0, big.mark = ","), ' Total COVID19 Cases', sep = ""),
+        
+        marker = list(colors = brewer.pal(length(reg_Breakdown$Reporting_PHU),"Spectral"),
+                      line = list(color = '#FFFFFF', width = 1)),
+        
+        showlegend = FALSE) %>% 
+
+layout(xaxis = list(showgrid = FALSE, 
+                    zeroline = FALSE, 
+                    showticklabels = FALSE),
+       
+       yaxis = list(showgrid = FALSE, 
+                    zeroline = FALSE, 
+                    showticklabels = FALSE))
+```
+
+### <b> Outcome Frequencies </b>
+
+```{r TotalCasesByPHU}
+reg_Breakdown$Reporting_PHU <- factor(reg_Breakdown$Reporting_PHU,
+                                      levels = unique(reg_Breakdown$Reporting_PHU)[order(reg_Breakdown$Total_Cases, decreasing = F)])
+
+plot_ly(data = reg_Breakdown, 
+        y = ~Total_Cases, 
+        x = ~Reporting_PHU, 
+        type = 'bar', 
+        name = "Total Cases",
+
+        text = ~paste(Reporting_PHU, 
+                      "<br>", 
+                      format(reg_Breakdown$Total_Cases, nsmall = 0, big.mark = ","), 
+                      "Total Covid19 Cases", 
+                      sep = " "), 
+        hoverinfo = "text", 
+        marker = list(color = '#FFC56C')) %>% 
+  
+  add_trace(y = ~Total_Recovered, 
+          type = 'bar', 
+          name = "Recoveries", 
+          text = ~paste(Reporting_PHU, 
+                        "<br>", 
+                        format(reg_Breakdown$Total_Recovered, nsmall = 0, big.mark = ","), 
+                        "Recoveries", 
+                        sep = " "), 
+          hoverinfo = "text", 
+          marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~Total_Deaths, 
+          type = 'bar', 
+          name = "Total Deaths",
+          text = ~paste(Reporting_PHU, 
+                        "<br>", 
+                        format(reg_Breakdown$Total_Deaths, nsmall = 0, big.mark = ","), 
+                        "Deaths", 
+                        sep = " "), 
+          
+          hoverinfo = "text", 
+          marker = list(color = '#FF5959')) %>% 
+
+  layout(title = "Outcome Frequencies",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Cumulative Frequency (n)"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"), 
+         legend = list(title = list(text = '<b> Outcome: </b>'))) 
+```
+
+### <b> Acquisition Frequency & Type </b>
+
+```{r AcqCasesByPHU}
+reg_acqBreakdown <- ConfirmedPositives %>% 
+  dplyr::select(Reporting_PHU, Case_AcquisitionInfo) %>% 
+  
+    dplyr::mutate(Case_AcquisitionInfo = case_when(
+      .$Case_AcquisitionInfo == "OB" ~ "Outbreak Related", 
+      .$Case_AcquisitionInfo == "CC" ~ "Close Contact",
+      .$Case_AcquisitionInfo == "TRAVEL" ~ "Travel",
+      .$Case_AcquisitionInfo == "NO KNOWN EPI LINK" ~ "Unknown",
+      .$Case_AcquisitionInfo == "MISSING INFORMATION" ~ "Unknown",
+      .$Case_AcquisitionInfo == "UNSPECIFIED EPI LINK" ~ "Unknown")) %>%
+  
+  dplyr::group_by(Reporting_PHU, Case_AcquisitionInfo) %>% 
+  dplyr::summarise(n = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(Case_AcquisitionInfo = trimws(Case_AcquisitionInfo)) %>% 
+  data.frame()
+
+reg_acqBreakdown <- tidyr::spread(reg_acqBreakdown, key = Case_AcquisitionInfo, value = n, fill = 0)
+
+reg_acqBreakdown$Reporting_PHU <- factor(reg_acqBreakdown$Reporting_PHU,
+                                      levels = unique(reg_acqBreakdown$Reporting_PHU)[order(reg_acqBreakdown$`Close Contact`, decreasing = F)])
+
+plot_ly(data = reg_acqBreakdown, 
+        y = ~`Close Contact`, 
+        x = ~Reporting_PHU, 
+        type = 'bar', 
+        name = "Close Contact",
+        
+        text = ~paste(Reporting_PHU, 
+                      "<br>", 
+                      format(reg_acqBreakdown$`Close Contact`, nsmall = 0, big.mark = ","), 
+                      " Close Contact", 
+                      sep = " "), 
+        
+        hoverinfo = "text", 
+        marker = list(color = '#E01E5A')) %>% 
+  
+  
+  add_trace(y = ~`Outbreak Related`, 
+            type = 'bar', 
+            name = "Outbreak", 
+            
+            text = ~paste(Reporting_PHU, 
+                          "<br>", 
+                          format(reg_acqBreakdown$`Outbreak Related`, nsmall = 0, big.mark = ","), 
+                          "Outbreak", 
+                          sep = " "), 
+            
+            hoverinfo = "text", 
+            marker = list(color = '#F4B400')) %>% 
+  
+  
+  add_trace(y = ~Travel, 
+            type = 'bar', 
+            name = "Travel", 
+            
+            text = ~paste(Reporting_PHU, 
+                          "<br>", 
+                          format(reg_acqBreakdown$Travel, nsmall = 0, big.mark = ","), 
+                          "Travel", 
+                          sep = " "), 
+            
+            hoverinfo = "text", 
+            marker = list(color = '#25D366')) %>% 
+  
+  add_trace(y = ~`Unknown`, 
+            type = 'bar', 
+            name = "Unknown", 
+            
+            text = ~paste(Reporting_PHU, 
+                          "<br>", 
+                          format(reg_acqBreakdown$Unknown, nsmall = 0, big.mark = ","), 
+                          "Unknown", 
+                          sep = " "), 
+            
+            hoverinfo = "text", 
+            marker = list(color = '#DCDCDC')) %>% 
+  
+  layout(title = "",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Cumulative Cases (n)"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"),
+         legend = list(title = list(text = '<b> Acquisition Type: </b>'))) 
+```
+
+### <b> Acquisition Composition </b>
+
+```{r, context="render", echo=FALSE}
+
+reg_acqBreakdown$Total_Cases <- rowSums(reg_acqBreakdown[,2:5])
+  
+  reg_acqBreakdown <- reg_acqBreakdown %>% 
+  dplyr::group_by(Reporting_PHU) %>% 
+  dplyr::mutate(CC_pct = round((`Close Contact`/Total_Cases)*100,1),
+                TR_pct = round((Travel/Total_Cases)*100,1),
+                OB_pct = round((`Outbreak Related`/Total_Cases)*100,1),
+                UN_pct = round((Unknown/Total_Cases)*100,1))%>% 
+  dplyr::ungroup()
+
+reg_acqBreakdown$Reporting_PHU <- factor(as.character(reg_acqBreakdown$Reporting_PHU))
+
+plot_ly(data = reg_acqBreakdown, 
+        x = ~Reporting_PHU, 
+        y = ~CC_pct, 
+        name = "Close Contact",
+        type = 'bar', 
+        text = ~paste(Reporting_PHU, "<br>",CC_pct, "% Close Contact", sep = ""), 
+        hoverinfo = "text", 
+        marker = list(color = '#FF5959')) %>% 
+  
+  add_trace(y = ~UN_pct, 
+            type = 'bar', 
+            name = "Unknown", 
+            text = ~paste(Reporting_PHU, "<br>",UN_pct, "% Unknown", sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#DCDCDC')) %>% 
+  
+  add_trace(y = ~OB_pct, 
+            type = 'bar', 
+            name = "Outbreak", 
+            text = ~paste(Reporting_PHU, "<br>",OB_pct, "% Outbreak", sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#F4B400')) %>% 
+  
+  add_trace(y = ~TR_pct, 
+            type = 'bar', 
+            name = "Travel", 
+            text = ~paste(Reporting_PHU, "<br>",TR_pct, "% Travel", sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#25D366')) %>% 
+  
+  layout(title = "",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Acquistion Frequency (%)",
+                      dtick = 25, 
+                      tick0 = 0.00, 
+                      tickmode = "linear"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"),
+         legend = list(title = list(text = '<b> Acquisition Types </b>')))   
+```
+
+### <b> Outcomes per Capita </b>
+
+```{r CasesPerCapitaByPHU}
+reg_Breakdown$Reporting_PHU <- factor(reg_Breakdown$Reporting_PHU, 
+                                      levels = unique(reg_Breakdown$Reporting_PHU)[order(reg_Breakdown$CasesPerCapita, decreasing = F)])
+
+plot_ly(data = reg_Breakdown,
+        x = ~Reporting_PHU, 
+        y = ~CasesPerCapita, 
+        name = "Cases",
+        type = 'bar', 
+        text = ~paste(Reporting_PHU, "<br>", "Cases per Capita: ",format(CasesPerCapita, big.mark = ","), sep = ""), 
+        hoverinfo = "text", 
+        marker = list(color = '#FFC56C')) %>% 
+  
+  add_trace(y = ~RecoveriesPerCapita, 
+            name = "Recoveries", 
+            type = 'bar', 
+            text = ~paste(Reporting_PHU, "<br>","Recoveries per Capita: ", format(RecoveriesPerCapita, big.mark = ","), sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~DeathsPerCapita, 
+            type = 'bar', 
+            name = "Deaths", 
+            text = ~paste(Reporting_PHU, "<br>","Deaths per Capita: ", DeathsPerCapita, sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#FF5959')) %>% 
+
+  layout(title = "",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Outcome per Capita (100K)"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"),
+         legend = list(title = list(text = '<b> Outcomes per Capita </b>'))) 
+```
+
+### <b> Outcome Composition </b>
+
+```{r DeathRecovCompared}
+
+reg_Breakdown$Reporting_PHU <- factor(as.character(reg_Breakdown$Reporting_PHU))
+
+plot_ly(data = reg_Breakdown, 
+        x = ~Reporting_PHU, 
+        y = ~DeathRate, 
+        name = "Deaths",
+        type = 'bar', 
+        text = ~paste(Reporting_PHU, "<br>",DeathRate, " % Fatality Rate", sep = ""), 
+        hoverinfo = "text", 
+        marker = list(color = '#FF5959')) %>%
+  
+  add_trace(y = ~RecoveryRate, 
+        name = "Recovered",
+        type = 'bar', 
+        text = ~paste(Reporting_PHU, "<br>",RecoveryRate, " % Recovery Rate", sep = ""), 
+        hoverinfo = "text", 
+        marker = list(color = '#6EC5E9')) %>% 
+  
+  add_trace(y = ~ActiveRate, 
+            name = "Active",
+            type = 'bar', 
+            text = ~paste(Reporting_PHU, "<br>",ActiveRate, " % Active Rate", sep = ""), 
+            hoverinfo = "text", 
+            marker = list(color = '#FFC56C')) %>% 
+
+  layout(title = "Outcome Composition",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Outcome Frequency (%)"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"),
+         legend = list(title = list(text = '<b> Outcomes </b>'))) 
+```
+
+### <b> Age Breakdown </b>
+
+```{r AgeBreakdowns}
+#Age Breakdown via region 
+age_reg_Breakdown <- ConfirmedPositives %>% 
+  dplyr::select(Reporting_PHU, Age_Group) %>% 
+  dplyr::group_by(Reporting_PHU,Age_Group) %>% 
+  dplyr::summarise(count = n(), .groups = 'keep') %>% 
+  dplyr::ungroup() %>% 
+  #remove UNKNOWN and Empty 
+  dplyr::filter(!Age_Group == "UNKNOWN") %>% 
+  #remove empty 
+  na_if("") %>%
+  # remove NAs
+  na.omit() %>% 
+  dplyr::rename(Cases = "count") %>% 
+  tidyr::pivot_wider(names_from = Age_Group, 
+                     values_from = Cases, 
+                     values_fill = 0) %>% 
+  data.frame() 
+
+age_reg_Breakdown$Reporting_PHU <- factor(age_reg_Breakdown$Reporting_PHU, 
+                                      levels = unique(age_reg_Breakdown$Reporting_PHU)[order(age_reg_Breakdown$X20s, decreasing = F)])
+
+plot_ly(data = age_reg_Breakdown, 
+        x = ~Reporting_PHU, 
+        y = ~X.20, 
+        type = "bar",
+        name = "<20", 
+        marker = list(color = "#A6CEE3")) %>% 
+  
+  add_trace(y = ~X20s,  
+            name = "20s",
+            marker = list(color = "#1F78B4")) %>% 
+  
+  add_trace(y = ~X30s,  
+            name = "30s",
+            marker = list(color = "#B2DF8A")) %>% 
+  
+  add_trace(y = ~X40s,  
+            name = "40s",
+            marker = list(color = "#FB9A99")) %>% 
+  
+  add_trace(y = ~X50s,  
+            name = "50s",
+            marker = list(color = "#E31A1C")) %>% 
+  
+  add_trace(y = ~X60s,  
+            name = "60s",
+            marker = list(color = "#FDBF6F")) %>% 
+  
+  add_trace(y = ~X70s,  
+            name = "70s",
+            marker = list(color = "#FF7F00")) %>% 
+  
+  add_trace(y = ~X80s,  
+            name = "80s",
+            marker = list(color = "#CAB2D6")) %>% 
+  
+  add_trace(y = ~X90.,  
+            name = "90s",
+            marker = list(color = "#6A3D9A")) %>% 
+  
+  layout(title = "Case Breakdown via Age Group and Region (n)",
+         xaxis = list(title = ""), 
+         yaxis = list(title = "Case Frequency (n)"), 
+         barmode = 'stack',
+         hovermode = "y-unified", 
+         hoverlabel=list(bgcolor="black"), 
+         legend = list(title = list(text = '<b> Age Groups </b>'))) 
+```
+
+# Long Term Care
+
+## Row {.tabset .tabset-fade}
+
+```{r, context="render", echo=FALSE}
+LTC <- casestatus %>% 
+  dplyr::select(Reported.Date, 
+                Total.Positive.LTC.Resident.Cases,
+                Total.Positive.LTC.HCW.Cases, 
+                Total.LTC.Resident.Deaths,
+                Total.LTC.HCW.Deaths) %>% 
+  #drop NA rows from Jan 26 2020 -- > May 19 2020 
+  drop_na() %>% 
+  dplyr::mutate(
+    #add absoulte and relative change for resident/worker cases & deaths 
+    Absolute_Change_Cases_Residents = Total.Positive.LTC.Resident.Cases - lag(Total.Positive.LTC.Resident.Cases, n = 1),
+    Relative_Change_Cases_Residents = round(Absolute_Change_Cases_Residents/Total.Positive.LTC.Resident.Cases*100,1), 
+    
+    Absolute_Change_Deaths_Residents = Total.LTC.Resident.Deaths - lag(Total.LTC.Resident.Deaths, n = 1),
+    Relative_Change_Deaths_Residents = round(Absolute_Change_Deaths_Residents/Total.LTC.Resident.Deaths*100, 1),
+    
+    Absolute_Change_Cases_Workers = Total.Positive.LTC.HCW.Cases - lag(Total.Positive.LTC.HCW.Cases, n = 1),
+    Relative_Change_Cases_Workers = round(Absolute_Change_Cases_Workers/Total.Positive.LTC.HCW.Cases*100,1), 
+    
+
+   
+    Absolute_Change_Deaths_Workers = Total.LTC.HCW.Deaths - lag(Total.LTC.HCW.Deaths, n = 1),
+    Relative_Change_Deaths_Workers = round(Absolute_Change_Deaths_Workers / Total.LTC.HCW.Deaths*100, 1)
+  )
+```
+
+### <b> Total Cases </b>
+
+```{r, context="render", echo=FALSE}
+#Cases per Day 
+plot_ly(data = LTC, type = 'bar') %>% 
+  
+  add_trace(x = ~Reported.Date, y = ~Total.Positive.LTC.HCW.Cases, name = "Workers", marker = list(color = "#FF9900")) %>% 
+  add_trace(x = ~Reported.Date, y = ~Total.Positive.LTC.Resident.Cases, name = "Residents", marker = list(color = "#78C257")) %>% 
+  
+  layout(title = "", 
+         xaxis = list(title = ''),
+         yaxis = list(title = 'Total Cases'), 
+         barmode = 'stack', 
+         hovermode = "x-unified") %>% 
+  
+  layout(paper_bgcolor='transparent') %>% 
+  
+  layout(xaxis = list(rangeselector = list(
+    buttons = buttons_time)),
+    legend = list(title = list(text = '<b> Long Term Care (LTC) </b>')))
+```
+
+### <b> Cumulative Deaths </b>
+
+```{r, context="render", echo=FALSE}
+#Cases per Day 
+plot_ly(data = LTC, type = 'bar') %>% 
+  add_trace(x = ~Reported.Date, y = ~Total.LTC.HCW.Deaths, name = "Workers", marker = list(color = "#FF9900")) %>% 
+  add_trace(x = ~Reported.Date, y = ~Total.LTC.Resident.Deaths, name = "Residents", marker = list(color = "#78C257")) %>% 
+
+  layout(title = "", 
+         xaxis = list(title = '', rangeselector = list(
+           buttons = buttons_time)),
+         yaxis = list(title = 'Total Deaths'), 
+         barmode = 'stack', 
+         hovermode = "x-unified",
+         paper_bgcolor='transparent', 
+         legend = list(title = list(text = '<b> Long Term Care (LTC) </b>')))
+```
+
+# About this Site
+
+#### Last Update
+
+`r format(Sys.time(), "%d %B, %Y")`
+
+#### Background
+
+*"Nothing in life is to be feared, it is only to be understood. Now is the time to understand more, so that we may fear less" - Marie Curie*
+
+#### Code
+
+Code and input data used to generate this web app are available on [Github](https://github.com/Erebus54/Ontario-Covid19-Tracker-Dashboard).
+
+#### Sources:
+
+1)  **Status of COVID-19 cases in Ontario** : [Open Data Ontario](https://data.ontario.ca/dataset/status-of-covid-19-cases-in-ontario), updated daily, statistics on testing, hospitalizations, and LTC's
+
+2)  **Confirmed positive cases of COVID-19 in Ontario**: [Open Data Ontaro](https://data.ontario.ca/en/dataset/confirmed-positive-cases-of-covid-19-in-ontario), updated daily, breakdown by region, outcome, age, gender, and acquisition
+
+3)  **Ontario COVID-19 outbreaks data**: [Ontario Open Data](https://data.ontario.ca/en/dataset/ontario-covid-19-outbreaks-data), updated daily, provides a summary of ongoing outbreaks via workplace group/subgroup over time
+
+4)  **Census Profile, 2016 Census** : [StatsCan](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E&TABID=1), used to pull total population by health region and areal statistics to calculate per capita/density case loads
+
+5)  **Vaccinations**
+
+#### Author
+
+Patrick Schnurbusch
+
+#### Contact
+
+[patrick.schnurbusch\@gmail.com](mailto:patrick.schnurbusch@gmail.com){.email}
