@@ -31,10 +31,10 @@ fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
 # Export file to disk 
 fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
 
-write.csv(covidStatus, 
-          file = fileName, 
-          fileEncoding = 'UTF-8', 
-          row.names = F)
+# write.csv(covidStatus, 
+#           file = fileName, 
+#           fileEncoding = 'UTF-8', 
+#           row.names = F)
 
 
 # Export as RDS file 
@@ -78,10 +78,10 @@ ConfirmedPositives <- ConfirmedPositives %>%
 # Set file name 
 fileName = paste(dirPath, 'Confirmed positive cases of COVID-19 in Ontario.csv',sep = '')
 # Write CSV File 
-write.csv(ConfirmedPositives, 
-          file = fileName, 
-          fileEncoding = 'UTF-8', 
-          row.names = F)
+# write.csv(ConfirmedPositives, 
+#           file = fileName, 
+#           fileEncoding = 'UTF-8', 
+#           row.names = F)
 
 # Export as RDS file 
 fileName = paste(dirPath, 'Confirmed positive cases of COVID-19 in Ontario.rds',sep = '')
@@ -134,10 +134,10 @@ ongoingOutbreaks <- ongoingOutbreaks %>%
 fileName = paste(dirPath, 'Ongoing outbreaks.csv',sep = '')
 
 # Write CSV File 
-write.csv(ongoingOutbreaks, 
-          file = fileName, 
-          fileEncoding = 'UTF-8', 
-          row.names = F)
+# write.csv(ongoingOutbreaks, 
+#           file = fileName, 
+#           fileEncoding = 'UTF-8', 
+#           row.names = F)
 
 # Export as RDS file 
 fileName = paste(dirPath, 'Ongoing outbreaks.rds',sep = '')
@@ -178,10 +178,10 @@ Vaccine_data$total_individuals_fully_vaccinated  <-  as.numeric(gsub(",","",Vacc
 fileName = paste(dirPath, 'COVID-19 Vaccine Data.csv',sep = '')
 
 # Write CSV File 
-write.csv(Vaccine_data, 
-          file = fileName, 
-          fileEncoding = 'UTF-8', 
-          row.names = F)
+# write.csv(Vaccine_data, 
+#           file = fileName, 
+#           fileEncoding = 'UTF-8', 
+#           row.names = F)
 
 
 # Export as RDS file 

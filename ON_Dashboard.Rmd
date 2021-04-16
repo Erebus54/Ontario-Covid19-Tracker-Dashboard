@@ -51,7 +51,8 @@ library(dplyr)
 library(data.table)
 
 #global province wide stats 
-casestatus <- read.csv("./datasets/Status of COVID-19 cases in Ontario.csv", encoding = "UTF-8")
+#casestatus <- read.csv("./datasets/Status of COVID-19 cases in Ontario.csv", encoding = "UTF-8")
+casestatus <- readRDS("./datasets/Status of COVID-19 cases in Ontario.rds")
 
 #filter out extraneous data for testing 
 casestatus <- casestatus %>% 
@@ -533,8 +534,8 @@ plot_ly(labels = ~Variant_Name, values = ~Total , type = 'pie',
 ### <b> Daily Doses </b>
 
 ```{r}
-
-Vaccine_data <- read.csv("./datasets/COVID-19 Vaccine Data.csv") %>% 
+Vaccine_data <- readRDS("./datasets/COVID-19 Vaccine Data.rds") %>% 
+#Vaccine_data <- read.csv("./datasets/COVID-19 Vaccine Data.csv") %>% 
   dplyr::mutate(report_date = as.Date(report_date, format = "%Y-%m-%d"))
                 
 Vaccine_data %>% 
@@ -795,7 +796,10 @@ casestatus %>%
 ## Row {.tabset .tabset-fade}
 
 ```{r, context="render", echo=FALSE}
-ConfirmedPositives <- data.table::fread("./datasets/Confirmed positive cases of COVID-19 in Ontario.csv", encoding = "UTF-8", data.table = F)
+# ConfirmedPositives <- data.table::fread("./datasets/Confirmed positive cases of COVID-19 in Ontario.csv", encoding = "UTF-8", data.table = F)
+
+ConfirmedPositives <- readRDS("datasets/Confirmed positive cases of COVID-19 in Ontario.rds")
+
 ConfirmedPositives$Case_Reported_Date <- as.Date(ConfirmedPositives$Case_Reported_Date, format = "%Y-%m-%d")
 ```
 
@@ -1120,7 +1124,10 @@ plot_ly(x = ~Case_Reported_Date,
 ### <b> Workplace Groups </b>
 
 ```{r, context="render", echo=FALSE}
-ongoingOutbreaks <- read.csv(file = "./datasets/Ongoing outbreaks.csv")
+# ongoingOutbreaks <- read.csv(file = "./datasets/Ongoing outbreaks.csv")
+
+
+ongoingOutbreaks <- readRDS(file = "datasets/Ongoing outbreaks.rds")
 # format dates 
 ongoingOutbreaks$date <- as.Date(ongoingOutbreaks$date)
 
