@@ -29,10 +29,18 @@ dirPath <- paste(getwd(), "/datasets/", sep = "")
 fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
 
 # Export file to disk 
+fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
+
 write.csv(covidStatus, 
           file = fileName, 
           fileEncoding = 'UTF-8', 
           row.names = F)
+
+
+# Export as RDS file 
+fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.rds',sep = '')
+saveRDS(covidStatus, file = fileName)
+
 
 #print notification message to console 
 # file.csv is downloaded, x rows by y columns
@@ -69,12 +77,15 @@ ConfirmedPositives <- ConfirmedPositives %>%
 
 # Set file name 
 fileName = paste(dirPath, 'Confirmed positive cases of COVID-19 in Ontario.csv',sep = '')
-
-# Write File 
+# Write CSV File 
 write.csv(ConfirmedPositives, 
           file = fileName, 
           fileEncoding = 'UTF-8', 
           row.names = F)
+
+# Export as RDS file 
+fileName = paste(dirPath, 'Confirmed positive cases of COVID-19 in Ontario.rds',sep = '')
+saveRDS(ConfirmedPositives, file = fileName)
 
 #print notification message to console 
 # file.csv is downloaded, x rows by y columns
@@ -122,11 +133,16 @@ ongoingOutbreaks <- ongoingOutbreaks %>%
 # Set file name 
 fileName = paste(dirPath, 'Ongoing outbreaks.csv',sep = '')
 
-# Write File 
+# Write CSV File 
 write.csv(ongoingOutbreaks, 
           file = fileName, 
           fileEncoding = 'UTF-8', 
           row.names = F)
+
+# Export as RDS file 
+fileName = paste(dirPath, 'Ongoing outbreaks.rds',sep = '')
+saveRDS(ongoingOutbreaks, file = fileName)
+
 
 #print notification message to console 
 # file.csv is downloaded, x rows by y columns
@@ -161,11 +177,16 @@ Vaccine_data$total_individuals_fully_vaccinated  <-  as.numeric(gsub(",","",Vacc
 # Set file name 
 fileName = paste(dirPath, 'COVID-19 Vaccine Data.csv',sep = '')
 
-# Write File 
+# Write CSV File 
 write.csv(Vaccine_data, 
           file = fileName, 
           fileEncoding = 'UTF-8', 
           row.names = F)
+
+
+# Export as RDS file 
+fileName = paste(dirPath, 'COVID-19 Vaccine Data.rds',sep = '')
+saveRDS(Vaccine_data, file = fileName)
 
 print(paste("Ontario vaccine data has been dowloaded",
             format(nrow(Vaccine_data), big.mark = ","), "Rows x ", ncol(Vaccine_data), "Columns",  
