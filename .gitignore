@@ -2,9 +2,6 @@
 .Rhistory
 .Rapp.history
 
-# Datasets folder 
-datasets/*
-
 # Session Data files
 .RData
 
