@@ -362,7 +362,7 @@ casestatus %>%
          xaxis = list(type = 'date', 
                       tickformat = "%B <br> %Y",
                       title = ''),
-         yaxis = list(title = "Outcome Rate (%)"), 
+         yaxis = list(title = "Outcome Rate (%)", ticksuffix = "%"), 
          barmode = 'stack',
          hovermode = "y-unified", 
          hoverlabel=list(bgcolor="black"), 
@@ -411,24 +411,34 @@ casestatus %>%
 
 ```{r}
 casestatus %>% 
-  dplyr::select(Reported.Date, Total_Lineage_B.1.1.7,Total_Lineage_B.1.351,Total_Lineage_P.1) %>% 
-  dplyr::mutate(Total_Lineage_B.1.1.7 = coalesce(Total_Lineage_B.1.1.7, 0), 
-                Total_Lineage_B.1.351 = coalesce(Total_Lineage_B.1.351, 0),
-                Total_Lineage_P.1 = coalesce(Total_Lineage_P.1, 0)) %>% 
-  dplyr::filter(Total_Lineage_B.1.1.7 > 0) %>% 
+  dplyr::select(Reported.Date, 
+                Total_Lineage_B.1.1.7_Alpha,
+                Total_Lineage_B.1.351_Beta,
+                Total_Lineage_P.1_Gamma, 
+                Total_Lineage_B.1.617.2_Delta) %>% 
+  
+  dplyr::mutate(Total_Lineage_B.1.1.7_Alpha = coalesce(Total_Lineage_B.1.1.7_Alpha, 0), 
+                Total_Lineage_B.1.351_Beta = coalesce(Total_Lineage_B.1.351_Beta, 0),
+                Total_Lineage_P.1_Gamma = coalesce(Total_Lineage_P.1_Gamma, 0), 
+                Total_Lineage_B.1.617.2_Delta = coalesce(Total_Lineage_B.1.617.2_Delta, 0)) %>% 
+  dplyr::filter(Total_Lineage_B.1.1.7_Alpha > 0) %>% 
   
   plot_ly(x = ~Reported.Date, 
-          y = ~Total_Lineage_B.1.1.7, 
+          y = ~Total_Lineage_B.1.1.7_Alpha, 
           type = 'bar', name = 'UK', 
           marker = list(color = '#6EC5E9')) %>% 
   
-  add_trace(y = ~Total_Lineage_B.1.351, 
+  add_trace(y = ~Total_Lineage_B.1.351_Beta, 
             name = 'South African ', 
             marker = list(color = '#FFC56C')) %>% 
   
-  add_trace(y = ~Total_Lineage_P.1, 
+  add_trace(y = ~Total_Lineage_P.1_Gamma, 
             name = 'Brazilian ', 
             marker = list(color = '#FF5959')) %>% 
+  
+    add_trace(y = ~Total_Lineage_B.1.617.2_Delta, 
+            name = 'Delta ', 
+            marker = list(color = 'purple')) %>% 
   
   
   layout(title = "Total Infections by Variant", 
@@ -451,28 +461,39 @@ casestatus %>%
 
 ```{r}
 casestatus %>% 
-  dplyr::select(Reported.Date, Total_Lineage_B.1.1.7,Total_Lineage_B.1.351,Total_Lineage_P.1) %>% 
-  dplyr::mutate(Total_Lineage_B.1.1.7 = coalesce(Total_Lineage_B.1.1.7, 0), 
-                Total_Lineage_B.1.351 = coalesce(Total_Lineage_B.1.351, 0),
-                Total_Lineage_P.1 = coalesce(Total_Lineage_P.1, 0)) %>% 
-  dplyr::filter(Total_Lineage_B.1.1.7 > 0) %>% 
+  dplyr::select(Reported.Date, 
+                Total_Lineage_B.1.1.7_Alpha,
+                Total_Lineage_B.1.351_Beta,
+                Total_Lineage_P.1_Gamma, 
+                Total_Lineage_B.1.617.2_Delta) %>% 
+  
+  dplyr::mutate(Total_Lineage_B.1.1.7_Alpha = coalesce(Total_Lineage_B.1.1.7_Alpha, 0), 
+                Total_Lineage_B.1.351_Beta = coalesce(Total_Lineage_B.1.351_Beta, 0),
+                Total_Lineage_P.1_Gamma = coalesce(Total_Lineage_P.1_Gamma, 0), 
+                Total_Lineage_B.1.617.2_Delta = coalesce(Total_Lineage_B.1.617.2_Delta, 0)) %>% 
+  dplyr::filter(Total_Lineage_B.1.1.7_Alpha > 0) %>% 
   
   plot_ly(x = ~Reported.Date, 
-          y = ~Total_Lineage_B.1.1.7, 
+          y = ~Total_Lineage_B.1.1.7_Alpha, 
           type = 'scatter', 
           name = 'UK', 
           mode = 'none',
           fill = 'tozeroy',
           fillcolor = "#6EC5E9") %>% 
   
-  add_trace(y = ~Total_Lineage_B.1.351, 
+  add_trace(y = ~Total_Lineage_B.1.351_Beta, 
             name = 'South African ', 
             fillcolor = "#FFC56C") %>% 
   
-  add_trace(y = ~Total_Lineage_P.1, 
+  add_trace(y = ~Total_Lineage_P.1_Gamma, 
             name = 'Brazilian ', 
             fillcolor = "#FF5959") %>% 
   
+  
+    
+  add_trace(y = ~Total_Lineage_B.1.617.2_Delta, 
+            name = 'Delta ', 
+            fillcolor = "Purple") %>% 
   
   layout(title = "Total Infections by Variant", 
          xaxis = list(type = 'date', 
@@ -495,19 +516,28 @@ casestatus %>%
 
 ```{r}
 casestatus %>% 
-  dplyr::select(Reported.Date, Total_Lineage_B.1.1.7,Total_Lineage_B.1.351,Total_Lineage_P.1) %>% 
-  dplyr::mutate(Total_Lineage_B.1.1.7 = coalesce(Total_Lineage_B.1.1.7, 0), 
-                Total_Lineage_B.1.351 = coalesce(Total_Lineage_B.1.351, 0),
-                Total_Lineage_P.1 = coalesce(Total_Lineage_P.1, 0)) %>% 
-  dplyr::filter(Total_Lineage_B.1.1.7 > 0) %>% 
+  dplyr::select(Reported.Date, 
+                Total_Lineage_B.1.1.7_Alpha,
+                Total_Lineage_B.1.351_Beta,
+                Total_Lineage_P.1_Gamma, 
+                Total_Lineage_B.1.617.2_Delta) %>% 
+  
+  dplyr::mutate(Total_Lineage_B.1.1.7_Alpha = coalesce(Total_Lineage_B.1.1.7_Alpha, 0), 
+                Total_Lineage_B.1.351_Beta = coalesce(Total_Lineage_B.1.351_Beta, 0),
+                Total_Lineage_P.1_Gamma = coalesce(Total_Lineage_P.1_Gamma, 0), 
+                Total_Lineage_B.1.617.2_Delta = coalesce(Total_Lineage_B.1.617.2_Delta, 0)) %>% 
+  
+  dplyr::filter(Total_Lineage_B.1.1.7_Alpha > 0) %>% 
+  
   dplyr::filter(Reported.Date == max(Reported.Date)) %>% 
   tidyr::pivot_longer(!Reported.Date ,names_to = "Variant", values_to = "Total") %>% 
   dplyr::select(-Reported.Date) %>% 
   dplyr::mutate(Variant = str_remove_all(Variant, "Total_Lineage_"), 
                 Variant_Name = case_when(
-                  Variant == "B.1.1.7" ~ "UK", 
-                  Variant == "B.1.351" ~ "S. Africa", 
-                  Variant == "P.1" ~ "Brazil")) %>% 
+                  Variant == "B.1.1.7_Alpha" ~ "UK", 
+                  Variant == "B.1.351_Beta" ~ "S. Africa", 
+                  Variant == "P.1_Gamma" ~ "Brazil", 
+                  Variant == "B.1.617.2_Delta" ~ "Delta")) %>% 
 
 plot_ly(labels = ~Variant_Name, values = ~Total , type = 'pie',
         textposition = 'inside',
@@ -539,17 +569,17 @@ Vaccine_data <- readRDS("./datasets/COVID-19 Vaccine Data.rds") %>%
   dplyr::mutate(report_date = as.Date(report_date, format = "%Y-%m-%d"))
                 
 Vaccine_data %>% 
-  dplyr::filter(!is.na(previous_day_doses_administered)) %>% 
+  dplyr::filter(!is.na(previous_day_total_doses_administered)) %>% 
 
   plot_ly(x = ~report_date, 
-        y = ~previous_day_doses_administered, 
+        y = ~previous_day_total_doses_administered, 
         type = 'bar', 
         marker = list(color = '#6EC5E9'), 
         text = ~paste(report_date, "<br>",
-                      "Administered:", format(previous_day_doses_administered, big.mark = ","),  sep = ""), 
+                      "Administered:", format(previous_day_total_doses_administered, big.mark = ","),  sep = ""), 
         hoverinfo = "text") %>% 
   
-  layout(title = "Previous Day - Doses Administered",
+  layout(title = "Previous Day - Total Doses Administered",
          xaxis = list(type = 'date', 
                       tickformat = "%B <br> %Y",
                       title = '', 
@@ -651,9 +681,9 @@ Vaccine_data %>%
   add_trace(x = ~Month_Yr, y = ~Tot_Unvaccinated_Pct, name = "Unvaccinated", 
             marker = list(color = "#dcdcdc")) %>% 
   
-  layout(title = "Vaccination Progress",
+  layout(title = "<b>Ontario Vaccination Progress </b>",
          xaxis = list(title = ""), 
-         yaxis = list(title = "Population (%)"), 
+         yaxis = list(title = "Population (%)", ticksuffix = "%"), 
          barmode = 'stack',
          hovermode = "y-unified", 
          hoverlabel=list(bgcolor="black"), 
@@ -729,17 +759,18 @@ casestatus %>%
   dplyr::select(Month_Yr, ICU, Total_Hospitalized) %>% 
   dplyr::filter(Month_Yr >= "2020-05") %>% 
   
-  plot_ly(x = ~Month_Yr, y = ~ICU, type = 'bar', name = 'ICU', 
-          marker = list(color = '#FFC56C')) %>% 
-  add_trace(x = ~Month_Yr, y = ~Total_Hospitalized,name = 'Hospitalizations', 
-            marker = list(color = '#dcdcdc')) %>% 
+  plot_ly(x = ~Month_Yr, y = ~Total_Hospitalized, type = 'bar', name = 'Hospitalizations', 
+          marker = list(color = '#dcdcdc')) %>% 
   
+  add_trace(x = ~Month_Yr, y = ~ICU,name = 'ICU', 
+            marker = list(color = '#FFC56C')) %>% 
+
   layout(title = "Monthly Hospitalizations",
          xaxis = list(type = 'date', 
                       tickformat = "%B <br> %Y",
                       title = ''),
          yaxis = list(title = "No. Hospitalized"), 
-         barmode = 'stack',
+         #barmode = 'stack',
          hovermode = "y-unified", 
          hoverlabel=list(bgcolor="black"), 
          legend = list(title = list(text = '<b> Status: </b>'))) %>% 
@@ -781,7 +812,7 @@ casestatus %>%
                       tickformat = "%B <br> %Y",
                       title = ''),
          yaxis = list(title = "No. Of ICU Patients"), 
-         barmode = 'stack',
+         #barmode = 'stack',
          hovermode = "y-unified", 
          hoverlabel=list(bgcolor="black"), 
          legend = list(title = list(text = '<b> Outcome: </b>'))) %>% 
@@ -830,7 +861,6 @@ plot_ly(labels = ~Case_AcquisitionInfo, values = ~n, type = 'pie',
                       'Cases', sep = " "),
         marker = list(colors = c("#E01E5A", "#F4B400", "#25D366", "#C0C0C0"),
                       line = list(color = '#FFFFFF', width = 1)),
-        #The 'pull' attribute can also be used to create space between the sectors
         showlegend = FALSE) %>% 
   
   layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
@@ -1183,7 +1213,7 @@ ongoingOutbreaks %>%
                       tickformat = "%B <br> %Y",
                       title = '', 
                       rangeselector = list(buttons = buttons_time)),
-         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+         yaxis = list(title = "Frequency of Ongoing Outbreaks",ticksuffix = "%",  
                       dtick = 25, 
                       tick0 = 0, 
                       tickmode = "linear"), 
@@ -1253,7 +1283,7 @@ ongoingOutbreaks %>%
                       tickformat = "%B <br> %Y",
                       title = '', 
                       rangeselector = list(buttons = buttons_time)),
-         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+         yaxis = list(title = "Frequency of Ongoing Outbreaks", ticksuffix = "%",  
                       dtick = 25, 
                       tick0 = 0, 
                       tickmode = "linear"), 
@@ -1288,7 +1318,7 @@ ongoingOutbreaks %>%
                       tickformat = "%B <br> %Y",
                       title = '', 
                       rangeselector = list(buttons = buttons_time)),
-         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+         yaxis = list(title = "Frequency of Ongoing Outbreaks", ticksuffix = "%", 
                       dtick = 25, 
                       tick0 = 0, 
                       tickmode = "linear"), 
@@ -1322,7 +1352,7 @@ ongoingOutbreaks %>%
                       tickformat = "%B <br> %Y",
                       title = '', 
                       rangeselector = list(buttons = buttons_time)), 
-         yaxis = list(title = "Frequency of Ongoing Outbreaks (%)", 
+         yaxis = list(title = "Frequency of Ongoing Outbreaks", ticksuffix = "%",  
                       dtick = 25, 
                       tick0 = 0, 
                       tickmode = "linear"), 
@@ -1601,7 +1631,7 @@ plot_ly(data = reg_acqBreakdown,
   
   layout(title = "",
          xaxis = list(title = ""), 
-         yaxis = list(title = "Acquistion Frequency (%)",
+         yaxis = list(title = "Acquistion Frequency", ticksuffix = "%", 
                       dtick = 25, 
                       tick0 = 0.00, 
                       tickmode = "linear"), 
@@ -1680,7 +1710,7 @@ plot_ly(data = reg_Breakdown,
 
   layout(title = "Outcome Composition",
          xaxis = list(title = ""), 
-         yaxis = list(title = "Outcome Frequency (%)"), 
+         yaxis = list(title = "Outcome Frequency", ticksuffix = "%"), 
          barmode = 'stack',
          hovermode = "y-unified", 
          hoverlabel=list(bgcolor="black"),
@@ -1862,4 +1892,4 @@ Patrick Schnurbusch
 
 #### Contact
 
-[patrick.schnurbusch\@gmail.com](mailto:patrick.schnurbusch@gmail.com){.email}
+[patrick.schnurbusch@gmail.com](mailto:patrick.schnurbusch@gmail.com){.email}
