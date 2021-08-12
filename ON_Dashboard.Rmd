@@ -49,7 +49,10 @@ library(tidyverse)
 library(tidyr)
 library(dplyr)
 library(data.table)
+library(here)
+```
 
+```{r ingest_data}
 #global province wide stats 
 #casestatus <- read.csv("./datasets/Status of COVID-19 cases in Ontario.csv", encoding = "UTF-8")
 casestatus <- readRDS("./datasets/Status of COVID-19 cases in Ontario.rds")
@@ -68,6 +71,7 @@ casestatus <- casestatus %>%
   #remove the zero cases 
   dplyr::filter(Total.Cases != 0)
 ```
+
 
 ```{r buttonsAssign}
 ##adding a range selector variable to supply list of options for our time series graphs into buttons_time
