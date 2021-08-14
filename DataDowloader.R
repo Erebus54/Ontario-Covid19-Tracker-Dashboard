@@ -3,6 +3,7 @@ library(data.table)
 library(dplyr)
 library(beepr)
 
+dirPath <- "datasets/"
 
 #Delete files in folder if they exist 
 do.call(file.remove, list(list.files(dirPath, full.names = TRUE)))
@@ -169,7 +170,7 @@ Vaccine_data <- data.table::fread(input = url,
                                   data.table = FALSE, header = T)
 
 
-Vaccine_data$previous_day_doses_administered  <-  as.numeric(gsub(",","",Vaccine_data$previous_day_doses_administered))
+Vaccine_data$previous_day_doses_administered  <-  as.numeric(gsub(",","",Vaccine_data$previous_day_total_doses_administered))
 Vaccine_data$total_doses_administered  <-  as.numeric(gsub(",","",Vaccine_data$total_doses_administered))
 Vaccine_data$total_doses_in_fully_vaccinated_individuals  <-  as.numeric(gsub(",","",Vaccine_data$total_doses_in_fully_vaccinated_individuals))
 Vaccine_data$total_individuals_fully_vaccinated  <-  as.numeric(gsub(",","",Vaccine_data$total_individuals_fully_vaccinated))
