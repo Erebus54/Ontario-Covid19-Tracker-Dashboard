@@ -52,10 +52,6 @@ library(data.table)
 library(here)
 ```
 
-```{r get_new_data, include=FALSE}
-source(file = "DataDowloader.R")
-```
-
 ```{r ingest_data}
 #global province wide stats 
 #casestatus <- read.csv("./datasets/Status of COVID-19 cases in Ontario.csv", encoding = "UTF-8")
