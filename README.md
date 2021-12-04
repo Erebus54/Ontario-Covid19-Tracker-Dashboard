@@ -26,7 +26,7 @@ Flexdashboard shiny app for displaying stats about Ontario covid19 pandemic resp
 
 Website
 -------
-The app is currently deployed [here](https://patrickschnurbusch.shinyapps.io/ON_Dashboard/)
+The app is currently deployed at shinyapps.io, you can assess the app [here](https://patrickschnurbusch.shinyapps.io/ON_Dashboard/)
 
 Setup
 =====
