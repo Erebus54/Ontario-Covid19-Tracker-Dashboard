@@ -26,14 +26,12 @@ Flexdashboard shiny app for displaying stats about Ontario covid19 pandemic resp
 
 Website
 -------
+The app is currently deployed [here](https://patrickschnurbusch.shinyapps.io/ON_Dashboard/)
 
-The app is currently deployed here: <https://patrickschnurbusch.shinyapps.io/ON_Dashboard/>
 Setup
 =====
 
-R
--
-Packages to run Data Downloader 
+Packages to run DataDownloader.R
 `install.packages(c('lubridate', 'data.table', 'dplyr', 'beepr'))`
 
 Packages to run Flexdashboard
