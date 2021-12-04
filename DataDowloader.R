@@ -26,18 +26,6 @@ covidStatus <- covidStatus %>%
 # Create URL for download
 dirPath <- paste(getwd(), "/datasets/", sep = "")
 
-# Set file name 
-fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
-
-# Export file to disk 
-fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.csv',sep = '')
-
-# write.csv(covidStatus, 
-#           file = fileName, 
-#           fileEncoding = 'UTF-8', 
-#           row.names = F)
-
-
 # Export as RDS file 
 fileName = paste(dirPath, 'Status of COVID-19 cases in Ontario.rds',sep = '')
 saveRDS(covidStatus, file = fileName)
