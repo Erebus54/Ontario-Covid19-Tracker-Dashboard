@@ -25,6 +25,10 @@ Flexdashboard shiny app for displaying stats about Ontario covid19 pandemic resp
 ![](images/Capture_03.PNG)
 ![](images/Capture_04.PNG)
 
+Website
+-------
+
+The app is currently deployed here: <https://patrickschnurbusch.shinyapps.io/ON_Dashboard/>
 Setup
 =====
 
@@ -54,7 +58,4 @@ If you know your way around git, go to a clean directory that is not already in 
 git clone https://github.com/Erebus54/Ontario-Covid19-Tracker-Dashboard.git
 ```
 
-Website
--------
 
-The app is currently deployed here: <https://patrickschnurbusch.shinyapps.io/ON_Dashboard/>
