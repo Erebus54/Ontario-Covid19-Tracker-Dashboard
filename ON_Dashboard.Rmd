@@ -283,7 +283,7 @@ plot_ly(x = ~Reported.Date, y = ~TotalCasesPerCapita,
          legend=list(title=list(text='<b> Per Capita Rates (1M)</b>'))) 
 ```
 
-# Testing 
+# Testing / Variants  
 
 ## Row {.tabset .tabset-fade}
 
