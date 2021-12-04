@@ -20,7 +20,6 @@ Overview
 ========
 Flexdashboard shiny app for displaying stats about Ontario covid19 pandemic response provincially and regionally. 
 
-![](images/Capture_01.PNG)
 ![](images/Capture_02.PNG)
 ![](images/Capture_03.PNG)
 ![](images/Capture_04.PNG)
