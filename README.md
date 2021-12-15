@@ -15,6 +15,9 @@ Ontario-Covid19-Tracker-Dashboard
     -   [Website](#website)
 -   [About](#about)
 
+Website
+-------
+The app is currently deployed at shinyapps.io, you can assess the app [here](https://patrickschnurbusch.shinyapps.io/ON_Dashboard/)
 
 Overview
 ========
@@ -24,9 +27,6 @@ Flexdashboard shiny app for displaying stats about Ontario covid19 pandemic resp
 ![](images/Capture_03.PNG)
 ![](images/Capture_04.PNG)
 
-Website
--------
-The app is currently deployed at shinyapps.io, you can assess the app [here](https://patrickschnurbusch.shinyapps.io/ON_Dashboard/)
 
 Setup
 =====
